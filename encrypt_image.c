@@ -213,7 +213,7 @@ void affine_dec(unsigned char *buf, int len) {
 }
 
 void aes_enc(unsigned char *buf, int len) {
-	int i, j, k, l, m, n;
+	int i, j, k, l, m, n, r;
 	int length = 4;
 	unsigned int rounds = 9;
 	unsigned int bytes;
@@ -242,8 +242,8 @@ void aes_enc(unsigned char *buf, int len) {
 			fprintf(stderr, "\nError reading encryption key.\n");
 			exit(1);
 		}
-		for (k = length - 1; k >= 0; k--) {
-			byte = bytes >> (k*8) & 0xFF;
+		for (k = 0; k < length; k++) {
+			byte = bytes >> (-1*(k - (length - 1)) * 8) & 0xFF;
 			key[j * length + k] = byte;
 		}
 	}
@@ -268,51 +268,6 @@ void aes_enc(unsigned char *buf, int len) {
 		prev = rc;
 	}
 
-
-	// // First create first round key from initial key
-	// key_column = (unsigned char *)malloc(length * sizeof(unsigned char));
-	// for (m = 0; m < length; m++) {
-	// 	key_column[m] = key[length * m + length - 1];
-	// }
-
-	// // Swap last block with first block
-	// swap = key_column[length - 1];
-	// key_column[length - 1] = key_column[0];
-	// key_column[0] = swap;
-	// // Run each byte through sbox
-	// for (m = 0; m < length; m++) {
-	// 	key_column[m] = sbox(key_column[m]);
-	// }
-	// printf("%s\n", key_column);
-
-	// // XOR with round constant
-	// for (m = 0; m < length; m++) {
-	// 	key_column[m] = key_column[m] ^ round_constants[0][m];
-	// }
-	// printf("%s\n", key_column);
-
-	// // XOR with the first column of initial key
-	// 	for (m = 0; m < length; m++) {
-	// 	key_column[m] = key_column[m] ^ key[length * m];
-	// }
-	// printf("%s\n", key_column);
-
-	// // Fill the round key first column
-	// for (m = 0; m < length; m++) {
-	// 	round_keys[0][m] = key_column[m];
-	// }
-	// printf("%s\n", key_column);
-	
-	// // Fill the rest of the columns of the round key
-	// for (m = 1; m < length; m++) {
-	// 	round_keys[0][length * m] = round_keys[0][length * m] ^ round_keys[0][length * (m-1)];
-	// 	round_keys[0][length * m + 1] = round_keys[0][length * m + 1] ^ round_keys[0][length * (m-1) + 1];
-	// 	round_keys[0][length * m + 2] = round_keys[0][length * m + 2] ^ round_keys[0][length * (m-1) + 2];
-	// 	round_keys[0][length * m + 3] = round_keys[0][length * m + 3] ^ round_keys[0][length * (m-1) + 3];
-	// }
-
-	// round_keys[0][key_size] = '\0';
-
 	// Generate round keys
 	for (i = 0; i < rounds; i++) {
 		if (i == 0) {
@@ -322,58 +277,92 @@ void aes_enc(unsigned char *buf, int len) {
 			}
 		} else {
 			// Otherwise fill prev_key with previous round key
-			prev_key[m] = round_keys[i - 1][m];
+			for (m = 0; m < key_size; m++) {
+				prev_key[m] = round_keys[i - 1][m];
+			}
 		}
 
 		prev_key[key_size] = '\0';
-		printf("%s\n", prev_key);
-
+		printf("\nRound %d:\n", i);
+		// for (m = 0; m < key_size - 1; m++) {
+		// 	printf("%x", prev_key[m]);
+		// }
+		printf("prev_key: ");
+		for (m = 0; m < key_size; m++) {
+			printf("%x", prev_key[m]);
+		}
+		printf("\n");
 		// Take last column of prev_key
 		for (m = 0; m < length; m++) {
 			key_column[m] = prev_key[length * m + length - 1];
 		}
 
-		key_column[column_size] = '\0';
+		key_column[length] = '\0';
+
+		for (m = 0; m < length; m++) {
+			printf("%x", key_column[m]);
+		}
+		printf("\n");
 
 		// Swap last block with first block
 		swap = key_column[length - 1];
 		key_column[length - 1] = key_column[0];
 		key_column[0] = swap;
+
+		for (m = 0; m < length; m++) {
+			printf("%x", key_column[m]);
+		}
+		printf("\n");
+
 		// Run each byte through sbox
 		for (m = 0; m < length; m++) {
 			key_column[m] = sbox(key_column[m]);
 		}
 
+		for (m = 0; m < length; m++) {
+			printf("%x", key_column[m]);
+		}
+		printf("\n");
+
 		// XOR with round constant
 		for (m = 0; m < length; m++) {
 			key_column[m] = key_column[m] ^ round_constants[i][m];
 		}
-		printf("%s\n", key_column);
 
-		// XOR with the first column of initial key
-			for (m = 0; m < length; m++) {
-			key_column[m] = key_column[m] ^ key[length * m];
+		for (m = 0; m < length; m++) {
+			printf("%x", key_column[m]);
 		}
-		printf("%s\n", key_column);
+		printf("\n");
+
+		// XOR with the first column of previous key
+			for (m = 0; m < length; m++) {
+			key_column[m] = key_column[m] ^ prev_key[length * m];
+		}
+
+		for (m = 0; m < length; m++) {
+			printf("%x", key_column[m]);
+		}
+		printf("\n");
 
 		// Fill the round key first column
 		for (m = 0; m < length; m++) {
-			round_keys[i][m] = key_column[m];
+			round_keys[i][m * length] = key_column[m];
 		}
-		printf("%s\n", key_column);
 
 		// Fill the rest of the columns of the round key
 		for (m = 1; m < length; m++) {
-			round_keys[i][length * m] = round_keys[i][length * m] ^ round_keys[i][length * (m-1)];
-			round_keys[i][length * m + 1] = round_keys[i][length * m + 1] ^ round_keys[i][length * (m-1) + 1];
-			round_keys[i][length * m + 2] = round_keys[i][length * m + 2] ^ round_keys[i][length * (m-1) + 2];
-			round_keys[i][length * m + 3] = round_keys[i][length * m + 3] ^ round_keys[i][length * (m-1) + 3];
+			for (r = 0; r < length; r++) {
+				round_keys[i][length * r + m] = prev_key[length * r * m] ^ round_keys[i][length * r + (m - 1)];
+			}
 		}
 
 		round_keys[i][key_size] = '\0';
 
-		printf("%s\n", round_keys[i]);
-
+		// printf("\nRound key for %d: ", i);
+		// for (m = 0; m < key_size - 1; m++) {
+		// 	printf("%x", round_keys[i][m]);
+		// }
+		// printf("\n");
 	}
 
 	for (l = 0; l < rounds - 1; l++) {
