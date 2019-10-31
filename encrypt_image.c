@@ -347,13 +347,13 @@ void aes_enc(unsigned char *buf, int len) {
 					block[m] = sbox(block[m]);
 				}
 
-				// Apply diffusion
+				// Apply diffusion - shift rows
 				for (k = 1; k < length; k++) {
 					for (l = 0; l < length; l++) {
 						block_row[l] = block[k * length + l];
 					}
 					for (l = 0; l < length; l++) {
-						block[l + length*3] = block_row[(l + k) % (length - 1)];
+						block[l + length*k] = block_row[(l + k) % (length - 1)];
 					}
 				}
 
@@ -378,7 +378,7 @@ void aes_enc(unsigned char *buf, int len) {
 
 			}
 
-			// Scoop block into buf again
+			// Scoop block into buf again - ECB
 			for (m = 0; m < block_size; m++) {
 					buf[j + m] = block[m];
 			}
@@ -532,7 +532,7 @@ void aes_dec(unsigned char *buf, int len) {
 			block[block_size] = '\0';
 
 			// Intermediate rounds
-			for (n = 0; n < rounds; n++) {
+			for (n = rounds - 1; n >= 0; n--) {
 
 				// Apply key secrecy
 				for (k = 0; k < block_size; k++) {
@@ -541,7 +541,7 @@ void aes_dec(unsigned char *buf, int len) {
 
 				// Mix columns
 				// Only if it is not the first round
-				if (n > 0) {
+				if (n < (rounds - 1)) {
 					for (k = 0; k < length; k++) {
 						for (l = 0; l < length; l++) {
 							block_column[l] = block[l * length + k];
@@ -553,19 +553,19 @@ void aes_dec(unsigned char *buf, int len) {
 					}
 				}
 
-				// Apply diffusion
+				// Apply diffusion - shift rows
 				for (k = 1; k < length; k++) {
 					for (l = 0; l < length; l++) {
 						block_row[l] = block[k * length + l];
 					}
 					for (l = 0; l < length; l++) {
-						block[l + length*3] = block_row[(l + k) % (length - 1)];
+						block[l + length*k] = block_row[(l + k + (length - 1)) % (length - 1)];
 					}
 				}
 
 				// Apply confusion
 				for (m = 0; m < block_size; m++) {
-					block[m] = sbox(block[m]);
+					block[m] = inv_sbox(block[m]);
 				}
 			}
 
@@ -574,7 +574,7 @@ void aes_dec(unsigned char *buf, int len) {
 				block[m] = block[m] ^ key[m];
 			}
 
-			// Scoop block into buf again
+			// Scoop block into buf again - ECB
 			for (m = 0; m < block_size; m++) {
 					buf[j + m] = block[m];
 			}
