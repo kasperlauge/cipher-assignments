@@ -12,7 +12,8 @@
 #include "ppm.h"
 
 /* Helper prototypes */
-// Lots of which is inspired from https://github.com/jhjin/OpenAES/blob/master/src/oaes_lib.c
+// Lots of which is heavily inspired from https://github.com/jhjin/OpenAES/blob/master/src/oaes_lib.c
+// Methods taken directly from oaes is named accordingly
 int modInverse(int a, int m);
 void gmix_column(unsigned char *r);
 void inv_gmix_column(unsigned char *r);
@@ -370,31 +371,19 @@ void aes_enc(unsigned char *buf, int len) {
 	int length = 4;
 	unsigned int rounds = 9;
 	unsigned int block_size = 16;
-	unsigned char *block;
+	unsigned char block[block_size];
 	unsigned int bytes;
 	unsigned char byte, swap;
-	unsigned int key_size = (length*sizeof(uint32_t) + 1) * (sizeof(unsigned char));
-	unsigned int column_size = (length + 1) * (sizeof(unsigned char));
-	unsigned char *key_column;
-	unsigned char *block_row;
-	unsigned char *block_column;
-	unsigned char *key;
-	unsigned char *prev_key;
-	unsigned char *round_keys[rounds];
+	unsigned int key_size = (length*sizeof(uint32_t)) * (sizeof(unsigned char));
+	unsigned int column_size = (length) * (sizeof(unsigned char));
+	unsigned char key_column[column_size];
+	unsigned char block_row[column_size];
+	unsigned char block_column[column_size];
+	unsigned char key[key_size];
+	unsigned char prev_key[key_size];
+	unsigned char round_keys[rounds][key_size];
 	unsigned char rc, prev;
 	unsigned char round_constants[rounds][sizeof(uint32_t)];
-
-	key = (unsigned char *)malloc(key_size);
-	prev_key = (unsigned char *)malloc(key_size);
-	key_column = (unsigned char *)malloc(column_size);
-	block_row = (unsigned char *)malloc(column_size);
-	block_column = (unsigned char *)malloc(column_size);
-	block = (unsigned char *)malloc(key_size);
-
-	for (i = 0; i < rounds; i++) {
-		round_keys[i] = (unsigned char *)malloc(key_size);
-	}
-	// getchar();
 
 	printf("Encryption key: ");
 	for (j = 0; j < length; j++) {
@@ -407,7 +396,6 @@ void aes_enc(unsigned char *buf, int len) {
 			key[j * length + k] = byte;
 		}
 	}
-	key[key_size] = '\0';
 
 	// Actual AES
 	// Generate round keys
@@ -432,24 +420,16 @@ void aes_enc(unsigned char *buf, int len) {
 	for (i = 0; i < rounds; i++) {
 		if (i == 0) {
 			// Fill prev_key with initial key
-			for (m = 0; m < key_size; m++) {
-				prev_key[m] = key[m];
-			}
+			memcpy(prev_key, key, key_size);
 		} else {
 			// Otherwise fill prev_key with previous round key
-			for (m = 0; m < key_size; m++) {
-				prev_key[m] = round_keys[i - 1][m];
-			}
+			memcpy(prev_key, round_keys[i - 1], key_size);
 		}
-
-		prev_key[key_size] = '\0';
 
 		// Take last column of prev_key
 		for (m = 0; m < length; m++) {
 			key_column[m] = prev_key[length * m + length - 1];
 		}
-
-		key_column[length] = '\0';
 
 		// Swap last block with first block
 		swap = key_column[length - 1];
@@ -479,11 +459,9 @@ void aes_enc(unsigned char *buf, int len) {
 		// Fill the rest of the columns of the round key
 		for (m = 1; m < length; m++) {
 			for (r = 0; r < length; r++) {
-				round_keys[i][length * r + m] = prev_key[length * r * m] ^ round_keys[i][length * r + (m - 1)];
+				round_keys[i][length * r + m] = prev_key[length * r + m] ^ round_keys[i][length * r + (m - 1)];
 			}
 		}
-
-		round_keys[i][key_size] = '\0';
 
 	}
 
@@ -499,7 +477,6 @@ void aes_enc(unsigned char *buf, int len) {
 					block[m] = buf[j + m];
 				}
 			}
-			block[block_size] = '\0';
 
 			// Initial round - just XOR input with initial key
 			for (m = 0; m < block_size; m++) {
@@ -546,16 +523,6 @@ void aes_enc(unsigned char *buf, int len) {
 			}
 
 		}
-
-	for (l = 0; l < rounds - 1; l++) {
-		free(round_keys[l]);
-	}
-	free(key_column);
-	free(block_row);
-	free(block_column);
-	free(key);
-	free(prev_key);
-	free(block);
 }
 
 void aes_dec(unsigned char *buf, int len) {
@@ -563,31 +530,19 @@ void aes_dec(unsigned char *buf, int len) {
 	int length = 4;
 	unsigned int rounds = 9;
 	unsigned int block_size = 16;
-	unsigned char *block;
+	unsigned char block[block_size];
 	unsigned int bytes;
 	unsigned char byte, swap;
-	unsigned int key_size = (length*sizeof(uint32_t) + 1) * (sizeof(unsigned char));
-	unsigned int column_size = (length + 1) * (sizeof(unsigned char));
-	unsigned char *key_column;
-	unsigned char *block_row;
-	unsigned char *block_column;
-	unsigned char *key;
-	unsigned char *prev_key;
-	unsigned char *round_keys[rounds];
+	unsigned int key_size = 16;
+	unsigned int column_size = (length) * (sizeof(unsigned char));
+	unsigned char key_column[column_size];
+	unsigned char block_row[column_size];
+	unsigned char block_column[column_size];
+	unsigned char key[key_size];
+	unsigned char prev_key[key_size];
+	unsigned char round_keys[rounds][key_size];
 	unsigned char rc, prev;
 	unsigned char round_constants[rounds][sizeof(uint32_t)];
-
-	key = (unsigned char *)malloc(key_size);
-	prev_key = (unsigned char *)malloc(key_size);
-	key_column = (unsigned char *)malloc(column_size);
-	block_row = (unsigned char *)malloc(column_size);
-	block_column = (unsigned char *)malloc(column_size);
-	block = (unsigned char *)malloc(key_size);
-
-	for (i = 0; i < rounds; i++) {
-		round_keys[i] = (unsigned char *)malloc(key_size);
-	}
-	// getchar();
 
 	printf("Encryption key: ");
 	for (j = 0; j < length; j++) {
@@ -600,7 +555,6 @@ void aes_dec(unsigned char *buf, int len) {
 			key[j * length + k] = byte;
 		}
 	}
-	key[key_size] = '\0';
 
 	// Actual AES
 	// Generate round keys
@@ -625,24 +579,16 @@ void aes_dec(unsigned char *buf, int len) {
 	for (i = 0; i < rounds; i++) {
 		if (i == 0) {
 			// Fill prev_key with initial key
-			for (m = 0; m < key_size; m++) {
-				prev_key[m] = key[m];
-			}
+			memcpy(prev_key, key, key_size);
 		} else {
 			// Otherwise fill prev_key with previous round key
-			for (m = 0; m < key_size; m++) {
-				prev_key[m] = round_keys[i - 1][m];
-			}
+			memcpy(prev_key, round_keys[i - 1], key_size);
 		}
-
-		prev_key[key_size] = '\0';
 
 		// Take last column of prev_key
 		for (m = 0; m < length; m++) {
 			key_column[m] = prev_key[length * m + length - 1];
 		}
-
-		key_column[length] = '\0';
 
 		// Swap last block with first block
 		swap = key_column[length - 1];
@@ -672,14 +618,10 @@ void aes_dec(unsigned char *buf, int len) {
 		// Fill the rest of the columns of the round key
 		for (m = 1; m < length; m++) {
 			for (r = 0; r < length; r++) {
-				round_keys[i][length * r + m] = prev_key[length * r * m] ^ round_keys[i][length * r + (m - 1)];
+				round_keys[i][length * r + m] = prev_key[length * r + m] ^ round_keys[i][length * r + (m - 1)];
 			}
 		}
-
-		round_keys[i][key_size] = '\0';
-
 	}
-
 
 		// For each block
 		for (j = 0; j < len; j+=block_size) {
@@ -692,7 +634,6 @@ void aes_dec(unsigned char *buf, int len) {
 					block[m] = buf[j + m];
 				}
 			}
-			block[block_size] = '\0';
 
 			// Intermediate rounds
 			for (n = rounds - 1; n >= 0; n--) {
@@ -735,18 +676,7 @@ void aes_dec(unsigned char *buf, int len) {
 			for (m = 0; m < block_size; m++) {
 					buf[j + m] = block[m];
 			}
-
 		}
-
-	for (l = 0; l < rounds - 1; l++) {
-		free(round_keys[l]);
-	}
-	free(key_column);
-	free(block_row);
-	free(block_column);
-	free(key);
-	free(prev_key);
-	free(block);
 }
 
 
@@ -830,32 +760,13 @@ void inv_shift_rows(unsigned char *block) {
 // From https://en.wikipedia.org/wiki/Rijndael_MixColumns
 void gmix_column(unsigned char *r) {
 	unsigned int block_size = 16;
-    // unsigned char a[4];
-    // unsigned char b[4];
-    // unsigned char c;
-    // unsigned char h;
-    // /* The array 'a' is simply a copy of the input array 'r'
-    //  * The array 'b' is each element of the array 'a' multiplied by 2
-    //  * in Rijndael's Galois field
-    //  * a[n] ^ b[n] is element n multiplied by 3 in Rijndael's Galois field */ 
-    // for (c = 0; c < 4; c++) {
-    //     a[c] = r[c];
-    //     /* h is 0xff if the high bit of r[c] is set, 0 otherwise */
-    //     h = (unsigned char)((signed char)r[c] >> 7); /* arithmetic right shift, thus shifting in either zeros or ones */
-    //     b[c] = r[c] << 1; /* implicitly removes high bit because b[c] is an 8-bit char, so we xor by 0x1b and not 0x11b in the next line */
-    //     b[c] ^= 0x1B & h; /* Rijndael's Galois field */
-    // }
-    // r[0] = b[0] ^ a[3] ^ a[2] ^ b[1] ^ a[1]; /* 2 * a0 + a3 + a2 + 3 * a1 */
-    // r[1] = b[1] ^ a[0] ^ a[3] ^ b[2] ^ a[2]; /* 2 * a1 + a0 + a3 + 3 * a2 */
-    // r[2] = b[2] ^ a[1] ^ a[0] ^ b[3] ^ a[3]; /* 2 * a2 + a1 + a0 + 3 * a3 */
-    // r[3] = b[3] ^ a[2] ^ a[1] ^ b[0] ^ a[0]; /* 2 * a3 + a2 + a1 + 3 * a0 */
-		int8_t _temp[4];
-  
-  	_temp[0] = oaes_gf_mul(r[0], 0x02) ^ oaes_gf_mul( r[1], 0x03 ) ^ r[2] ^ r[3];
-  	_temp[1] = r[0] ^ oaes_gf_mul( r[1], 0x02 ) ^ oaes_gf_mul( r[2], 0x03 ) ^ r[3];
-  	_temp[2] = r[0] ^ r[1] ^ oaes_gf_mul( r[2], 0x02 ) ^ oaes_gf_mul( r[3], 0x03 );
-  	_temp[3] = oaes_gf_mul( r[0], 0x03 ) ^ r[1] ^ r[2] ^ oaes_gf_mul( r[3], 0x02 );
-  	memcpy( r, _temp, 4 );
+	int8_t _temp[4];
+
+  _temp[0] = oaes_gf_mul(r[0], 0x02) ^ oaes_gf_mul( r[1], 0x03 ) ^ r[2] ^ r[3];
+  _temp[1] = r[0] ^ oaes_gf_mul( r[1], 0x02 ) ^ oaes_gf_mul( r[2], 0x03 ) ^ r[3];
+  _temp[2] = r[0] ^ r[1] ^ oaes_gf_mul( r[2], 0x02 ) ^ oaes_gf_mul( r[3], 0x03 );
+  _temp[3] = oaes_gf_mul( r[0], 0x03 ) ^ r[1] ^ r[2] ^ oaes_gf_mul( r[3], 0x02 );
+  memcpy( r, _temp, 4 );
 }
 
 void inv_gmix_column(unsigned char *r) {
