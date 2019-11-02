@@ -25,8 +25,8 @@ unsigned char inv_sbox(unsigned char byte);
 void vigenere(unsigned char *buf, int len);
 void affine_enc(unsigned char *buf, int len);
 void affine_dec(unsigned char *buf, int len);
-void aes_enc(unsigned char *buf, int len);
-void aes_dec(unsigned char *buf, int len);
+void aes_enc(unsigned char *buf, int len, int cbc_mode);
+void aes_dec(unsigned char *buf, int len, int cbc_mode);
 
 uint8_t oaes_gf_mul(uint8_t left, uint8_t right);
 
@@ -200,12 +200,14 @@ FILE *input, *output;
 /* Main program. */
 int main(int argc, char *argv[]) {
 	int encrypt = 0;
+	int cbc_mode = 0;
+	int ecb_mode = 0;
 	pic image;
 
 	/* Check number of arguments. */
-	if (argc != 5) {
+	if (argc < 5) {
 		fprintf(stderr,
-				"\nUsage: encrypt_image [-e|-d] [-v|-a|-t] input_image output_image\n");
+				"\nUsage: encrypt_image [-e|-d] [-v|-a|-t] (optionally [-e|-c]) input_image output_image\n");
 		exit(1);
 	}
 	/* Check mode. */
@@ -220,12 +222,23 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "\nUnknown algorithm, use [-v|-a|-t].\n");
 		exit(1);
 	}
+	
+	cbc_mode = argv[3][1] == 'c';
+	ecb_mode = argv[3][1] == 'e';
+	/* Check mode of operation. */
+	if (argv[3][0] == '-') {
+		if (!(cbc_mode || ecb_mode)) {
+			fprintf(stderr, "\nUnknown mode of operation, use [-c|-e].\n");
+			exit(1);
+		}
+	}
+	
 	/* Check files. */
-	if ((input = fopen(argv[3], "rb")) == NULL) {
+	if ((input = fopen(argv[3 + cbc_mode + ecb_mode], "rb")) == NULL) {
 		fprintf(stderr, "\nN�o � poss�vel ler arquivo de entrada.\n");
 		exit(1);
 	}
-	if ((output = fopen(argv[4], "wb")) == NULL) {
+	if ((output = fopen(argv[4 + cbc_mode + ecb_mode], "wb")) == NULL) {
 		fprintf(stderr, "\nN�o � poss�vel gravar em arquivo de sa�da.\n");
 		exit(1);
 	}
@@ -248,9 +261,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 't':
                         if (encrypt)
-                                aes_enc(image.pix, image.nx * image.ny * 3);
+                                aes_enc(image.pix, image.nx * image.ny * 3, cbc_mode);
                         else
-                                aes_dec(image.pix, image.nx * image.ny * 3);
+                                aes_dec(image.pix, image.nx * image.ny * 3, cbc_mode);
                         break;
 	}
 
@@ -370,7 +383,7 @@ void affine_dec(unsigned char *buf, int len) {
 	}
 }
 
-void aes_enc(unsigned char *buf, int len) {
+void aes_enc(unsigned char *buf, int len, int cbc_mode) {
 	int i, j, k, l, m, n, r;
 	int length = 4;
 	unsigned int rounds = 9;
@@ -483,16 +496,18 @@ void aes_enc(unsigned char *buf, int len) {
 				}
 			}
 
-			// If CBC mode of operation uncomment this
+			// If CBC mode of operation
 			// If first block use IV
-			// if (j == 0) {
-			// 	for (m = 0; m < block_size; m++)
-			// 		block[m] = block[m] ^ initialization_vector[m];
-			// } else {
-			// 	// Other wise use previous block
-			// 	for (m = 0; m < block_size; m++)
-			// 		block[m] = block[m] ^ prev_block[m];
-			// }
+			if (cbc_mode) {
+				if (j == 0) {
+					for (m = 0; m < block_size; m++)
+						block[m] = block[m] ^ initialization_vector[m];
+				} else {
+					// Other wise use previous block
+					for (m = 0; m < block_size; m++)
+						block[m] = block[m] ^ prev_block[m];
+				}
+			}
 
 			// Initial round - just XOR input with initial key
 			for (m = 0; m < block_size; m++) {
@@ -543,7 +558,7 @@ void aes_enc(unsigned char *buf, int len) {
 		}
 }
 
-void aes_dec(unsigned char *buf, int len) {
+void aes_dec(unsigned char *buf, int len, int cbc_mode) {
 	int i, j, k, l, m, n, r;
 	int length = 4;
 	unsigned int rounds = 9;
@@ -695,16 +710,18 @@ void aes_dec(unsigned char *buf, int len) {
 				block[m] = block[m] ^ key[m];
 			}
 
-			// If CBC mode of operation uncomment this
+			// If CBC mode of operation
 			// If first block use IV
-			// if (j == 0) {
-			// 	for (m = 0; m < block_size; m++)
-			// 		block[m] = block[m] ^ initialization_vector[m];
-			// } else {
-			// 	// Otherwise use previous block
-			// 	for (m = 0; m < block_size; m++)
-			// 		block[m] = block[m] ^ prev_block[m];
-			// }
+			if (cbc_mode) {
+				if (j == 0) {
+					for (m = 0; m < block_size; m++)
+						block[m] = block[m] ^ initialization_vector[m];
+				} else {
+					// Otherwise use previous block
+					for (m = 0; m < block_size; m++)
+						block[m] = block[m] ^ prev_block[m];
+				}
+			}
 
 			// Scoop block into buf again - ECB
 			for (m = 0; m < block_size; m++) {
