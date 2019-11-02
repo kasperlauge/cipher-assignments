@@ -419,14 +419,10 @@ void aes_enc(unsigned char *buf, int len) {
 	for (i = 0; i < rounds; i++) {
 		if (i == 0) {
 			// Fill prev_key with initial key
-			for (m = 0; m < key_size; m++) {
-				prev_key[m] = key[m];
-			}
+			memcpy(prev_key, key, key_size);
 		} else {
 			// Otherwise fill prev_key with previous round key
-			for (m = 0; m < key_size; m++) {
-				prev_key[m] = round_keys[i - 1][m];
-			}
+			memcpy(prev_key, round_keys[i - 1], key_size);
 		}
 
 		// Take last column of prev_key
@@ -582,14 +578,10 @@ void aes_dec(unsigned char *buf, int len) {
 	for (i = 0; i < rounds; i++) {
 		if (i == 0) {
 			// Fill prev_key with initial key
-			for (m = 0; m < key_size; m++) {
-				prev_key[m] = key[m];
-			}
+			memcpy(prev_key, key, key_size);
 		} else {
 			// Otherwise fill prev_key with previous round key
-			for (m = 0; m < key_size; m++) {
-				prev_key[m] = round_keys[i - 1][m];
-			}
+			memcpy(prev_key, round_keys[i - 1], key_size);
 		}
 
 		// Take last column of prev_key
