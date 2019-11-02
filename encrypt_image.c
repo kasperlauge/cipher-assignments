@@ -483,16 +483,16 @@ void aes_enc(unsigned char *buf, int len) {
 				}
 			}
 
-			// If CBC mode of operation
+			// If CBC mode of operation uncomment this
 			// If first block use IV
-			if (j == 0) {
-				for (m = 0; m < block_size; m++)
-					block[m] = block[m] ^ initialization_vector[m];
-			} else {
-				// Other wise use previous block
-				for (m = 0; m < block_size; m++)
-					block[m] = block[m] ^ prev_block[m];
-			}
+			// if (j == 0) {
+			// 	for (m = 0; m < block_size; m++)
+			// 		block[m] = block[m] ^ initialization_vector[m];
+			// } else {
+			// 	// Other wise use previous block
+			// 	for (m = 0; m < block_size; m++)
+			// 		block[m] = block[m] ^ prev_block[m];
+			// }
 
 			// Initial round - just XOR input with initial key
 			for (m = 0; m < block_size; m++) {
@@ -695,16 +695,16 @@ void aes_dec(unsigned char *buf, int len) {
 				block[m] = block[m] ^ key[m];
 			}
 
-			// If CBC mode of operation
+			// If CBC mode of operation uncomment this
 			// If first block use IV
-			if (j == 0) {
-				for (m = 0; m < block_size; m++)
-					block[m] = block[m] ^ initialization_vector[m];
-			} else {
-				// Otherwise use previous block
-				for (m = 0; m < block_size; m++)
-					block[m] = block[m] ^ prev_block[m];
-			}
+			// if (j == 0) {
+			// 	for (m = 0; m < block_size; m++)
+			// 		block[m] = block[m] ^ initialization_vector[m];
+			// } else {
+			// 	// Otherwise use previous block
+			// 	for (m = 0; m < block_size; m++)
+			// 		block[m] = block[m] ^ prev_block[m];
+			// }
 
 			// Scoop block into buf again - ECB
 			for (m = 0; m < block_size; m++) {
