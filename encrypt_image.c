@@ -373,27 +373,27 @@ void aes_enc(unsigned char *buf, int len) {
 	unsigned char *block;
 	unsigned int bytes;
 	unsigned char byte, swap;
-	unsigned int key_size = (length*sizeof(uint32_t) + 1) * (sizeof(unsigned char));
-	unsigned int column_size = (length + 1) * (sizeof(unsigned char));
-	unsigned char *key_column;
+	unsigned int key_size = (length*sizeof(uint32_t)) * (sizeof(unsigned char));
+	unsigned int column_size = (length) * (sizeof(unsigned char));
+	unsigned char key_column[key_size];
 	unsigned char *block_row;
 	unsigned char *block_column;
-	unsigned char *key;
-	unsigned char *prev_key;
-	unsigned char *round_keys[rounds];
+	unsigned char key[key_size];
+	unsigned char prev_key[key_size];
+	unsigned char round_keys[rounds][key_size];
 	unsigned char rc, prev;
 	unsigned char round_constants[rounds][sizeof(uint32_t)];
 
-	key = (unsigned char *)malloc(key_size);
-	prev_key = (unsigned char *)malloc(key_size);
-	key_column = (unsigned char *)malloc(column_size);
+	// key = (unsigned char *)malloc(key_size);
+	// prev_key = (unsigned char *)malloc(key_size);
+	// key_column = (unsigned char *)malloc(column_size);
 	block_row = (unsigned char *)malloc(column_size);
 	block_column = (unsigned char *)malloc(column_size);
 	block = (unsigned char *)malloc(key_size);
 
-	for (i = 0; i < rounds; i++) {
-		round_keys[i] = (unsigned char *)malloc(key_size);
-	}
+	// for (i = 0; i < rounds; i++) {
+	// 	round_keys[i] = (unsigned char *)malloc(key_size);
+	// }
 	// getchar();
 
 	printf("Encryption key: ");
@@ -407,7 +407,6 @@ void aes_enc(unsigned char *buf, int len) {
 			key[j * length + k] = byte;
 		}
 	}
-	key[key_size] = '\0';
 
 	// Actual AES
 	// Generate round keys
@@ -442,14 +441,10 @@ void aes_enc(unsigned char *buf, int len) {
 			}
 		}
 
-		prev_key[key_size] = '\0';
-
 		// Take last column of prev_key
 		for (m = 0; m < length; m++) {
 			key_column[m] = prev_key[length * m + length - 1];
 		}
-
-		key_column[length] = '\0';
 
 		// Swap last block with first block
 		swap = key_column[length - 1];
@@ -483,8 +478,6 @@ void aes_enc(unsigned char *buf, int len) {
 			}
 		}
 
-		round_keys[i][key_size] = '\0';
-
 	}
 
 
@@ -499,7 +492,6 @@ void aes_enc(unsigned char *buf, int len) {
 					block[m] = buf[j + m];
 				}
 			}
-			block[block_size] = '\0';
 
 			// Initial round - just XOR input with initial key
 			for (m = 0; m < block_size; m++) {
@@ -547,14 +539,14 @@ void aes_enc(unsigned char *buf, int len) {
 
 		}
 
-	for (l = 0; l < rounds - 1; l++) {
-		free(round_keys[l]);
-	}
-	free(key_column);
+	// for (l = 0; l < rounds - 1; l++) {
+	// 	free(round_keys[l]);
+	// }
+	// free(key_column);
 	free(block_row);
 	free(block_column);
-	free(key);
-	free(prev_key);
+	// free(key);
+	// free(prev_key);
 	free(block);
 }
 
@@ -566,27 +558,27 @@ void aes_dec(unsigned char *buf, int len) {
 	unsigned char *block;
 	unsigned int bytes;
 	unsigned char byte, swap;
-	unsigned int key_size = (length*sizeof(uint32_t) + 1) * (sizeof(unsigned char));
-	unsigned int column_size = (length + 1) * (sizeof(unsigned char));
-	unsigned char *key_column;
+	unsigned int key_size = (length*sizeof(uint32_t)) * (sizeof(unsigned char));
+	unsigned int column_size = (length) * (sizeof(unsigned char));
+	unsigned char key_column[length];
 	unsigned char *block_row;
 	unsigned char *block_column;
-	unsigned char *key;
-	unsigned char *prev_key;
-	unsigned char *round_keys[rounds];
+	unsigned char key[key_size];
+	unsigned char prev_key[key_size];
+	unsigned char round_keys[rounds][key_size];
 	unsigned char rc, prev;
 	unsigned char round_constants[rounds][sizeof(uint32_t)];
 
-	key = (unsigned char *)malloc(key_size);
-	prev_key = (unsigned char *)malloc(key_size);
-	key_column = (unsigned char *)malloc(column_size);
+	// key = (unsigned char *)malloc(key_size);
+	// prev_key = (unsigned char *)malloc(key_size);
+	// key_column = (unsigned char *)malloc(column_size);
 	block_row = (unsigned char *)malloc(column_size);
 	block_column = (unsigned char *)malloc(column_size);
 	block = (unsigned char *)malloc(key_size);
 
-	for (i = 0; i < rounds; i++) {
-		round_keys[i] = (unsigned char *)malloc(key_size);
-	}
+	// for (i = 0; i < rounds; i++) {
+	// 	round_keys[i] = (unsigned char *)malloc(key_size);
+	// }
 	// getchar();
 
 	printf("Encryption key: ");
@@ -600,7 +592,6 @@ void aes_dec(unsigned char *buf, int len) {
 			key[j * length + k] = byte;
 		}
 	}
-	key[key_size] = '\0';
 
 	// Actual AES
 	// Generate round keys
@@ -635,14 +626,10 @@ void aes_dec(unsigned char *buf, int len) {
 			}
 		}
 
-		prev_key[key_size] = '\0';
-
 		// Take last column of prev_key
 		for (m = 0; m < length; m++) {
 			key_column[m] = prev_key[length * m + length - 1];
 		}
-
-		key_column[length] = '\0';
 
 		// Swap last block with first block
 		swap = key_column[length - 1];
@@ -676,8 +663,6 @@ void aes_dec(unsigned char *buf, int len) {
 			}
 		}
 
-		round_keys[i][key_size] = '\0';
-
 	}
 
 
@@ -692,7 +677,6 @@ void aes_dec(unsigned char *buf, int len) {
 					block[m] = buf[j + m];
 				}
 			}
-			block[block_size] = '\0';
 
 			// Intermediate rounds
 			for (n = rounds - 1; n >= 0; n--) {
@@ -738,14 +722,14 @@ void aes_dec(unsigned char *buf, int len) {
 
 		}
 
-	for (l = 0; l < rounds - 1; l++) {
-		free(round_keys[l]);
-	}
-	free(key_column);
+	// for (l = 0; l < rounds - 1; l++) {
+	// 	free(round_keys[l]);
+	// }
+	// free(key_column);
 	free(block_row);
 	free(block_column);
-	free(key);
-	free(prev_key);
+	// free(key);
+	// free(prev_key);
 	free(block);
 }
 
