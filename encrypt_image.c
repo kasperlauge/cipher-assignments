@@ -370,7 +370,7 @@ void aes_enc(unsigned char *buf, int len) {
 	int length = 4;
 	unsigned int rounds = 9;
 	unsigned int block_size = 16;
-	unsigned char *block;
+	unsigned char block[block_size];
 	unsigned int bytes;
 	unsigned char byte, swap;
 	unsigned int key_size = (length*sizeof(uint32_t)) * (sizeof(unsigned char));
@@ -389,7 +389,7 @@ void aes_enc(unsigned char *buf, int len) {
 	// key_column = (unsigned char *)malloc(column_size);
 	// block_row = (unsigned char *)malloc(column_size);
 	// block_column = (unsigned char *)malloc(column_size);
-	block = (unsigned char *)malloc(key_size);
+	// block = (unsigned char *)malloc(key_size);
 
 	// for (i = 0; i < rounds; i++) {
 	// 	round_keys[i] = (unsigned char *)malloc(key_size);
@@ -547,7 +547,7 @@ void aes_enc(unsigned char *buf, int len) {
 	// free(block_column);
 	// free(key);
 	// free(prev_key);
-	free(block);
+	// free(block);
 }
 
 void aes_dec(unsigned char *buf, int len) {
@@ -555,7 +555,7 @@ void aes_dec(unsigned char *buf, int len) {
 	int length = 4;
 	unsigned int rounds = 9;
 	unsigned int block_size = 16;
-	unsigned char *block;
+	unsigned char block[block_size];
 	unsigned int bytes;
 	unsigned char byte, swap;
 	unsigned int key_size = (length*sizeof(uint32_t)) * (sizeof(unsigned char));
@@ -574,7 +574,7 @@ void aes_dec(unsigned char *buf, int len) {
 	// key_column = (unsigned char *)malloc(column_size);
 	// block_row = (unsigned char *)malloc(column_size);
 	// block_column = (unsigned char *)malloc(column_size);
-	block = (unsigned char *)malloc(key_size);
+	// block = (unsigned char *)malloc(key_size);
 
 	// for (i = 0; i < rounds; i++) {
 	// 	round_keys[i] = (unsigned char *)malloc(key_size);
@@ -730,7 +730,7 @@ void aes_dec(unsigned char *buf, int len) {
 	// free(block_column);
 	// free(key);
 	// free(prev_key);
-	free(block);
+	// free(block);
 }
 
 
