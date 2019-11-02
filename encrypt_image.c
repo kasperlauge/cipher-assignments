@@ -190,6 +190,10 @@ static uint8_t oaes_inv_sub_byte_value[16][16] = {
   /*f*/  0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d,
 };
 
+static unsigned char initialization_vector[16] = {
+	0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb
+};
+
 /* Program arguments. */
 FILE *input, *output;
 
@@ -372,6 +376,7 @@ void aes_enc(unsigned char *buf, int len) {
 	unsigned int rounds = 9;
 	unsigned int block_size = 16;
 	unsigned char block[block_size];
+	unsigned char prev_block[block_size];
 	unsigned int bytes;
 	unsigned char byte, swap;
 	unsigned int key_size = (length*sizeof(uint32_t)) * (sizeof(unsigned char));
@@ -478,6 +483,17 @@ void aes_enc(unsigned char *buf, int len) {
 				}
 			}
 
+			// If CBC mode of operation
+			// If first block use IV
+			if (j == 0) {
+				for (m = 0; m < block_size; m++)
+					block[m] = block[m] ^ initialization_vector[m];
+			} else {
+				// Other wise use previous block
+				for (m = 0; m < block_size; m++)
+					block[m] = block[m] ^ prev_block[m];
+			}
+
 			// Initial round - just XOR input with initial key
 			for (m = 0; m < block_size; m++) {
 				block[m] = block[m] ^ key[m];
@@ -522,6 +538,8 @@ void aes_enc(unsigned char *buf, int len) {
 					buf[j + m] = block[m];
 			}
 
+			// Save into prev_block for CBC mode
+			memcpy(prev_block, block, block_size);
 		}
 }
 
@@ -531,6 +549,8 @@ void aes_dec(unsigned char *buf, int len) {
 	unsigned int rounds = 9;
 	unsigned int block_size = 16;
 	unsigned char block[block_size];
+	unsigned char curr_block[block_size];
+	unsigned char prev_block[block_size];
 	unsigned int bytes;
 	unsigned char byte, swap;
 	unsigned int key_size = 16;
@@ -635,6 +655,9 @@ void aes_dec(unsigned char *buf, int len) {
 				}
 			}
 
+			// Save into curr_block for CBC mode
+			memcpy(curr_block, block, block_size);
+
 			// Intermediate rounds
 			for (n = rounds - 1; n >= 0; n--) {
 
@@ -672,10 +695,24 @@ void aes_dec(unsigned char *buf, int len) {
 				block[m] = block[m] ^ key[m];
 			}
 
+			// If CBC mode of operation
+			// If first block use IV
+			if (j == 0) {
+				for (m = 0; m < block_size; m++)
+					block[m] = block[m] ^ initialization_vector[m];
+			} else {
+				// Otherwise use previous block
+				for (m = 0; m < block_size; m++)
+					block[m] = block[m] ^ prev_block[m];
+			}
+
 			// Scoop block into buf again - ECB
 			for (m = 0; m < block_size; m++) {
 					buf[j + m] = block[m];
 			}
+
+			// Save into prev_block for CBC mode
+			memcpy(prev_block, curr_block, block_size);
 		}
 }
 
